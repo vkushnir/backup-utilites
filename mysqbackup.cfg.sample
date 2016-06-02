@@ -1,0 +1,36 @@
+# mysqldump configuration sample
+[database]
+#Set database access
+login-path=backup
+# setup login-path for mysql
+# mysql_config_editor set --login-path=<login-path> --host=<server> --user=<username> --password 
+
+database=asterisk
+
+# diff:
+# true - generate diff file for each table if it changed from previous backup
+diff=True
+
+# save:
+# true - save data from tables
+save-data=True
+
+# incremental:
+# true - save only changed tables
+incremental=True
+
+[tables]
+# List included or excluded tables
+# include - to backup only selected tables
+# exclude - to backup all except selected tables
+# include/exclude = <table1>,<table2>,<table3>,...<tablen>
+exclude=cdr,queue_log,iaxfriends
+
+[columns]
+# included or exluded columns
+# mode = true - to backup only selected columns
+# mode = false - to backup all except selected tables
+# <table_name>=<mode>,<column1>,<column2>,<column3>,...<columnn>
+sippeers=0,lastms,ipaddr,port,regseconds,defaultuser,fullcontact,regserver,useragent
+time_limits=0,seconds
+manage_partitions=0,last_updated
