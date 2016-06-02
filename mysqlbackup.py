@@ -2,12 +2,13 @@
 ########################################################### 
 # 
 # This python script is used for mysql database backup 
+# using mysqldump utility. 
 # 
 # Written by : Vladimir Kushnir
 # Created date: 25.05.2016 
 # Last modified: 02.06.2016 
 # Tested with : Python 2.6.6 
-# Script Revision: 1.0
+# Script Revision: 1.01
 # 
 ########################################################## 
 
@@ -74,18 +75,21 @@ def fexit(msg):
 ## Check previous archive
 if do_diff or do_inc:
 	find = Popen(findc, stdout=PIPE, stderr=flog)
-	xargs = Popen(xargsc, stdin=find.stdout, stdout=PIPE, stderr=flog)
-	find.stdout.close()
-	cxargs = xargs.communicate()
-	if (find.returncode > 0) or (xargs.returncode > 0):
+	cfind = find.communicate()
+	if find.returncode > 0:
 		fexit("Find previous archive error!")
-	if cxargs[0] != '':
-		for pzip in reversed(cxargs[0].split()):
-		# extract files to temporary folder
-			unzip = Popen(unzipc+[pzip, "-d", last_root], stderr=flog)
-			cunzip = unzip.communicate()
-			if unzip.returncode > 0:
-				fexit("Extract files from '"+pzip+"' error!")
+	if cfind[0] != '':
+		xargs = Popen(xargsc, stdin=PIPE, stdout=PIPE, stderr=flog)
+		cxargs = xargs.communicate(cfind[0])
+		if xargs.returncode > 0:
+			fexit("Sort previous archives error!")
+		if cxargs[0] != '':
+			for pzip in reversed(cxargs[0].split()):
+			# extract files to temporary folder
+				unzip = Popen(unzipc+[pzip, "-d", last_root], stderr=flog)
+				cunzip = unzip.communicate()
+				if unzip.returncode > 0:
+					fexit("Extract files from '"+pzip+"' error!")
 	else:
 		do_diff = so_inc = False
 
