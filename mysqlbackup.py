@@ -34,6 +34,7 @@ cfg = ConfigParser.SafeConfigParser({"backup-root":"backup", "login-path":"backu
 cfg.read (cfg_full)
 
 # Parse configuration data and Command-Line Arguments
+parser = OptionParser(version="%prog 1.10")
 parser.set_defaults(root=cfg.get("database", "backup-root"),
 					db_path=cfg.get("database", "login-path"),
 					db_name=cfg.get("database", "database"),
