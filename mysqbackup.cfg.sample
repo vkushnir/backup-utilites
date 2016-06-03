@@ -1,23 +1,26 @@
 # mysqldump configuration sample
 [database]
-#Set database access
-login-path=backup
-# setup login-path for mysql
+# Set database access
+# Root folder for backup
+# backup-root=
+
+# setup access for mysql
 # mysql_config_editor set --login-path=<login-path> --host=<server> --user=<username> --password 
+login-path=backup
 
 database=asterisk
 
 # diff:
 # true - generate diff file for each table if it changed from previous backup
-diff=True
+save-diff=True
 
 # save:
 # true - save data from tables
 save-data=True
 
-# incremental:
+# changed:
 # true - save only changed tables
-incremental=True
+save-changed=True
 
 [tables]
 # List included or excluded tables

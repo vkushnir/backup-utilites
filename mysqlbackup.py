@@ -8,16 +8,20 @@
 # Created date: 25.05.2016 
 # Last modified: 02.06.2016 
 # Tested with : Python 2.6.6 
-# Script Revision: 1.01
+# Script Revision: 1.10
 # 
 ########################################################## 
 
 # Import required python libraries 
-import os, sys, stat
+import os, sys
+import stat
 import tempfile
 import datetime
 import ConfigParser
 from subprocess import Popen, PIPE, STDOUT
+from optparse import OptionParser, OptionGroup
+
+date=datetime.date.today()
 
 # Get configuretion file
 cfg_name = os.path.splitext(os.path.basename(__file__))[0]+".cfg"
@@ -26,22 +30,33 @@ if not os.path.exists(cfg_full):
 	cfg_full = "/etc/" + cfg_name
 	if not os.path.exists(cfg_full):
 		sys.exit ("Can't find \"" + cfg_name + "\" file\n")	
-cfg = ConfigParser.RawConfigParser()
+cfg = ConfigParser.SafeConfigParser({"backup-root":"backup", "login-path":"backup", "database":"mysql", "save-changed":"True", "save-diff":"True", "save-data":"True"})
 cfg.read (cfg_full)
 
-# Deafult Constants
-date=datetime.date.today()
-
-# Read configuration data
-db_path = cfg.get("database", "login-path")
-db_name = cfg.get("database", "database")
-do_inc = cfg.getboolean("database", "incremental")
-do_diff = cfg.getboolean("database", "diff")
+# Parse configuration data and Command-Line Arguments
+parser.set_defaults(root=cfg.get("database", "backup-root"),
+					db_path=cfg.get("database", "login-path"),
+					db_name=cfg.get("database", "database"),
+					do_inc=cfg.getboolean("database", "save-changed"),
+					do_diff=cfg.getboolean("database", "save-diff"),
+					do_save=cfg.getboolean("database", "save-data"))
+group = OptionGroup(parser, "Override CFG", "Next options override data loaded from config file")
+group.add_option("-r", "--backup-root", dest="root", help="Backup root folder")
+group.add_option("-l", "--login-path", dest="db_path", help="'login-path' from '.mylogin.cnf' with data for mysql database backup access")
+group.add_option("-d", "--database", dest="db_name", help="MySQL database name")
+group.add_option("--save-data", dest="do_save", action="store_true", help="Save data from tables in 'csv' format")
+group.add_option("--no-data", dest="do_save", action="store_false", help="Don't save data from tables in 'csv' format")
+group.add_option("--save-diff", dest="do_diff", action="store_true", help="Generate diff file for each table if it changed from previous backup")
+group.add_option("--no-diff", dest="do_diff", action="store_false", help="Don't generate diff file for each table if it changed from previous backup")
+group.add_option("--save-changed", dest="do_inc", action="store_true", help="Save data only for tables that have changed with the previous backup")
+group.add_option("--save-all", dest="do_inc", action="store_false", help="Save data only from all tables")
+parser.add_option_group(group)
+(opt, args) = parser.parse_args()
 
 # Generate backup and temporary directories
-backup_root = "/backup/" + db_name
-backup_folder = backup_root + "/{0}/{0}-{1:02d}".format(date.year, date.month)
-backup_file = backup_folder + "/{3}_{0}{1:02d}{2:02d}".format(date.year, date.month, date.day, db_name)
+backup_root = os.path.join('/', opt.root, opt.db_name)
+backup_folder = os.path.join(backup_root, "{0}/{0}-{1:02d}".format(date.year, date.month))
+backup_file = os.path.join(backup_folder, "{3}_{0}{1:02d}{2:02d}".format(date.year, date.month, date.day, opt.db_name))
 log_file = backup_file + ".log"
 # Create backup directory
 try:
@@ -56,11 +71,11 @@ os.chmod(last_root, 0o777)
 print ("Folders:", backup_folder, dump_root, last_root)
 
 # External applications
-mysqlc = ["mysql", "--login-path="+db_path]
-mysqldc = ["mysqldump", "--login-path="+db_path, "--routines", "--complete-insert", "--extended-insert", "--order-by-primary", "--quote-names", "--skip-add-drop-table"]
+mysqlc = ["mysql", "--login-path="+opt.db_path]
+mysqldc = ["mysqldump", "--login-path="+opt.db_path, "--routines", "--complete-insert", "--extended-insert", "--order-by-primary", "--quote-names", "--skip-add-drop-table"]
 pkzipc = ["zip", "-9", "--junk-paths", "--latest-time", "--recurse-paths", backup_file+".zip", dump_root]
 unzipc = ["unzip", "-uo"]
-findc = ["find", backup_root + "/{0}".format(date.year), "-name", "*.zip", "-type", "f"]
+findc = ["find", os.path.join(backup_root, "{0}".format(date.year)), "-name", "*.zip", "-type", "f"]
 xargsc = ["xargs", "ls", "-tr"]
 diffc = ["diff", "--ignore-case", "--ignore-tab-expansion", "--ignore-blank-lines", "--ignore-space-change", "--ignore-matching-lines=^--", "-u"]
 
@@ -73,7 +88,7 @@ def fexit(msg):
 
 ### START
 ## Check previous archive
-if do_diff or do_inc:
+if opt.do_diff or opt.do_inc:
 	find = Popen(findc, stdout=PIPE, stderr=flog)
 	cfind = find.communicate()
 	if find.returncode > 0:
@@ -91,38 +106,38 @@ if do_diff or do_inc:
 				if unzip.returncode > 0:
 					fexit("Extract files from '"+pzip+"' error!")
 	else:
-		do_diff = so_inc = False
+		opt.do_diff = opt.do_inc = False
 
 ## Save database schema
-dump_sql = dump_root+"/"+db_name+".sql"
+dump_sql = os.path.join(dump_root, opt.db_name+".sql")
 with open(dump_sql, "w") as mysqld_sql:
-	mysqld = Popen(mysqldc + ["--no-data", "--log-error="+log_file, db_name], stdout=mysqld_sql, stderr=flog)
+	mysqld = Popen(mysqldc + ["--no-data", "--log-error="+log_file, opt.db_name], stdout=mysqld_sql, stderr=flog)
 	cmysqld = mysqld.communicate()
 	if mysqld.returncode > 0:
 		fexit("Save database schema error!")
 # Compare files
-if do_diff or do_inc:
-	dump_last = last_root+"/"+db_name+".sql"
+if opt.do_diff or opt.do_inc:
+	dump_last = os.path.join(last_root, opt.db_name+".sql")
 	if os.path.exists(dump_last):
-		dump_diff = dump_root+"/"+db_name+".diff"
+		dump_diff = dump_root+"/"+opt.db_name+".diff"
 		with open(dump_diff, "w") as fdiff:
-			diff = Popen(diffc + [dump_last, dump_root+"/"+db_name+".sql"], stdout=fdiff, stderr=flog)
+			diff = Popen(diffc + [dump_last, dump_sql], stdout=fdiff, stderr=flog)
 			cdiff = diff.communicate()
 		if diff.returncode == 0:
 			os.remove(dump_diff)
-			if do_inc:
+			if opt.do_inc:
 				os.remove(dump_sql)
 		elif diff.returncode == 1:
-			if not do_diff:
+			if not opt.do_diff:
 				os.remove(dump_diff)
 		else:
-			fexit("Generate diff for "+db_name+".sql error!")
+			fexit("Generate diff for "+opt.db_name+".sql error!")
 
 ## SAVE TABLES
-if cfg.getboolean("database", "save-data"):
+if opt.do_save:
 	 
 	# Get tables list
-	mysql = Popen(mysqlc+["information_schema", "-e", "SELECT `t`.`TABLE_NAME` FROM `information_schema`.`TABLES` `t` WHERE `t`.`TABLE_SCHEMA`='"+db_name+"' AND `t`.`TABLE_TYPE`='BASE TABLE';"], stdout=PIPE, stderr=flog)
+	mysql = Popen(mysqlc+["information_schema", "-e", "SELECT `t`.`TABLE_NAME` FROM `information_schema`.`TABLES` `t` WHERE `t`.`TABLE_SCHEMA`='"+opt.db_name+"' AND `t`.`TABLE_TYPE`='BASE TABLE';"], stdout=PIPE, stderr=flog)
 	cmysql = mysql.communicate()
 	if cmysql[0] == '' or mysql.returncode > 0:
 		flog.write("Get tables list error!")
@@ -142,7 +157,7 @@ if cfg.getboolean("database", "save-data"):
 	
 	# Save tables
 	for table in tables:
-		mysql = Popen(mysqlc+["information_schema", "-e", "SELECT `c`.`COLUMN_NAME` FROM `information_schema`.`COLUMNS` c WHERE c.TABLE_SCHEMA='"+db_name+"' AND c.TABLE_NAME='"+table+"';"], stdout=PIPE, stderr=flog)
+		mysql = Popen(mysqlc+["information_schema", "-e", "SELECT `c`.`COLUMN_NAME` FROM `information_schema`.`COLUMNS` c WHERE c.TABLE_SCHEMA='"+opt.db_name+"' AND c.TABLE_NAME='"+table+"';"], stdout=PIPE, stderr=flog)
 		cmysql = mysql.communicate()
 		if mysql.returncode > 0:
 			fexit("Get table '"+table+"' columns error!")
@@ -157,42 +172,42 @@ if cfg.getboolean("database", "save-data"):
 		else:
 			columns = all_columns
 		# check if table have data
-		mysql = Popen(mysqlc+[db_name, "-e", "SELECT `"+columns[0]+"` FROM `"+table+"` LIMIT 1;"], stdout=PIPE, stderr=flog)
+		mysql = Popen(mysqlc+[opt.db_name, "-e", "SELECT `"+columns[0]+"` FROM `"+table+"` LIMIT 1;"], stdout=PIPE, stderr=flog)
 		cmysql = mysql.communicate()
 		if mysql.returncode > 0:
 			fexit("Check table '"+table+"' error!")
 		if cmysql[0] != '':
 			# save table header
-			table_hdr = dump_root+"/"+table+".hdr"
+			table_hdr = os.path.join(dump_root, table+".hdr")
 			if os.path.exists(table_hdr):
 				os.remove(table_hdr)
-			mysql = Popen(mysqlc+[db_name, "-e", "SELECT '"+"','".join(columns)+"' INTO OUTFILE '"+table_hdr+"' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n';"], stderr=flog)
+			mysql = Popen(mysqlc+[opt.db_name, "-e", "SELECT '"+"','".join(columns)+"' INTO OUTFILE '"+table_hdr+"' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n';"], stderr=flog)
 			cmysql = mysql.communicate()
 			if mysql.returncode > 0:
 				fexit("Save table '"+table+"' headers error!")
 			# save table data
-			table_csv = dump_root+"/"+table+".csv"
+			table_csv = os.path.join(dump_root, table+".csv")
 			if os.path.exists(table_csv):
 				os.remove(table_csv)
-			mysql = Popen(mysqlc+[db_name, "-e", "SELECT `"+'`,`'.join(columns)+"` FROM `"+table+"` INTO OUTFILE '"+table_csv+"' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n';"], stderr=flog)
+			mysql = Popen(mysqlc+[opt.db_name, "-e", "SELECT `"+'`,`'.join(columns)+"` FROM `"+table+"` INTO OUTFILE '"+table_csv+"' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n';"], stderr=flog)
 			cmysql = mysql.communicate()
 			if mysql.returncode > 0:
 				fexit("Get table '"+table+"' data error!")
 			# Compare files
-			if do_diff or do_inc:
-				table_last = last_root+"/"+table+".csv"
+			if opt.do_diff or opt.do_inc:
+				table_last = os.path.join(last_root, table+".csv")
 				if os.path.exists(table_last):
-					table_diff = dump_root+"/"+table+".diff"
+					table_diff = os.path.join(dump_root, table+".diff")
 					with open(table_diff, "w") as fdiff:
 						diff = Popen(diffc + [table_last, table_csv], stdout=fdiff, stderr=flog)
 						cdiff = diff.communicate()
 					if diff.returncode == 0:
 						os.remove(table_diff)
-						if do_inc:
+						if opt.do_inc:
 							os.remove(table_hdr)
 							os.remove(table_csv)
 					elif diff.returncode == 1:
-						if not do_diff:
+						if not opt.do_diff:
 							os.remove(table_diff)
 					else:
 						fexit("Generate diff for table "+table+" error!")
