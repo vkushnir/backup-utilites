@@ -1,8 +1,17 @@
 #MYSQLBACKUP
 *Simple backup utility for small MySQL databases.*
+
+## Use:
+    
+    #!/usr/bin/python
+    
+    from mysqlbackup import get_options, do_backup
+    
+    do_backup(get_options())
+
 ##Configuration file:
 *Configuration file must have same name as main script with extention '**.cfg'**. And located in the same directory as sycript or in '**/etc/**' direcotory*
-Structure:
+###Structure:
 
     [database]
     backup-root=
@@ -44,7 +53,8 @@ Structure:
 ##Command-Line Arguments
 *Command-Line Arguments override setting from config files*
 
- - -r , --backup-root *- backup root folder*
+ - -c , ---configuration *- Load configuration from file*
+ - -r, --backup-root *- backup root folder*
  - -l, --login-path *- 'login-path' from '.mylogin.cnf' with data for mysql database backup access*
  - -d, --database *- MySQL database name*
  - --save-data *- save data from tables in 'csv' format*
