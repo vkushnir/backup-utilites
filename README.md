@@ -6,12 +6,12 @@
     #!/usr/bin/python
     from mysqlbackup import get_options, do_backup
     do_backup(get_options())
-system automayicaly search file with **'<script name>.conf'** in centrain folders (*if **mysqlbackup_asterisk.py** then **mysqlbackup_asterisk.conf***) or just with command-line
+system automayicaly search file with **'\<script name\>.conf'** in centrain folders (_if **mysqlbackup_asterisk.py** then **mysqlbackup_asterisk.conf**_) or just with command-line
 
     mysqlbackup.py -c <configuration file>.conf
     
 ## Configuration file:
-*Configuration file must have same name as main script with extention **'.cfg'**. And located in the same directory as sycript or in **'/etc/'** direcotory*
+_Configuration file must have same name as main script with extention **'.conf'**. And located in the same directory as script or in **'/etc/'** direcotory_
 
 **Structure:**
 
@@ -55,16 +55,16 @@ system automayicaly search file with **'<script name>.conf'** in centrain folder
 ## Command-Line Arguments
 *Command-Line Arguments override setting from config files*
 
- - -c , ---configuration *- Load configuration from file*
- - -r, --backup-root *- backup root folder*
- - -l, --login-path *- 'login-path' from '.mylogin.cnf' with data for mysql database backup access*
- - -d, --database *- MySQL database name*
- - --save-data *- save data from tables in 'csv' format*
- - --no-data *- don't save data from tables in 'csv' format*
- - --save-diff *- generate diff file for each table if it changed from previous backup*
- - --no-diff *- don't generate diff file for each table if it changed from previous backup*
- - --save-changed *- save data only for tables that have changed with the previous backup*
- - --save-all *- save data only from all tables*
+ - -c , ---configuration _- Load configuration from file_
+ - -r, --backup-root _- backup root folder_
+ - -l, --login-path _- 'login-path' from '.mylogin.cnf' with data for mysql database backup access_
+ - -d, --database _- MySQL database name_
+ - --save-data _- save data from tables in 'csv' format_
+ - --no-data _- don't save data from tables in 'csv' format_
+ - --save-diff _- generate diff file for each table if it changed from previous backup_
+ - --no-diff _- don't generate diff file for each table if it changed from previous backup_
+ - --save-changed _- save data only for tables that have changed with the previous backup_
+ - --save-all _- save data only from all tables_
 
 ## Imports
 ### Classes
@@ -89,11 +89,13 @@ system automayicaly search file with **'<script name>.conf'** in centrain folder
    - log
    - temp_dump
    - temp_last
+
 ### Functions
- - sqlf_to_str - *convert list object to list of string sql*
- - sqls_to_str - *convert list object to list of fields sql*
- - str_to_bool - *convert string to boolean value*
- - find_config_file - *search configuration file*
+ - sqlf_to_str - _convert list object to list of string sql_
+ - sqls_to_str - _convert list object to list of fields sql_
+ - str_to_bool - _convert string to boolean value_
+ - find_config_file - _search configuration file_
+
 ### Procedures
  - load_config_file
  - load_command_arguments
