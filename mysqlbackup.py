@@ -17,7 +17,7 @@
 
 """
 
-__version__ = "1.31"
+__version__ = "1.32"
 __copyright__ = "Vladimir Kushnir aka Kvantum i(c)2016"
 
 __all__ = ['BackupOptions',
@@ -196,11 +196,11 @@ def str_to_bool(value):
     return False
 
 
-def find_config_file(name=None, locations=['/etc'], read=True):
+def find_config_file(name=None, locations=['/etc', os.path.dirname(sys.argv[0])], read=True):
     # search cofiguration file
     if name is None:
-        #name = os.path.splitext(os.path.basename(__file__))[0]+'.cfg'
-        name = os.path.splitext(os.path.basename(sys.argv[0]))[0]+'.cfg'
+        #name = os.path.splitext(os.path.basename(__file__))[0]+'.conf'
+        name = os.path.splitext(os.path.basename(sys.argv[0]))[0]+'.conf'
     if os.path.exists(name):
         return name
     else:
@@ -412,7 +412,7 @@ def dump_db_schema(options, log=None):
                        options.database_name], stdout = fsd, stderr = log)
         cmysqld = mysqld.communicate()
         if mysqld.returncode > 0:
-            lexit("Save "'+opt.db_name+'" schema error!")
+            lexit("Save '"+options.database_name+"' schema error!")
     return sql_dump
 
 
@@ -466,11 +466,12 @@ def db_table_has_data(options, table, log=None):
 
 
 def pack_new_dump(options, log=None):
-    pkzip = Popen(["zip", "-9", "--junk-paths", "--latest-time", "--recurse-paths", 
-                  options.path.backup, options.path.temp_dump], stderr=log)
-    cpkzip = pkzip.communicate()
-    if pkzip.returncode > 0:
-        lexit("ZIP files error!")
+    if len(os.listdir(options.path.temp_dump)) > 0:
+        pkzip = Popen(["zip", "-9", "--junk-paths", "--latest-time", "--recurse-paths", 
+                       options.path.backup, options.path.temp_dump], stderr=log)
+        cpkzip = pkzip.communicate()
+        if pkzip.returncode > 0:
+            lexit("ZIP files error!")
 
 def make_folders(options, tdump=None, tlast=None):
     try:
