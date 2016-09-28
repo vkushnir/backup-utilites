@@ -475,9 +475,9 @@ def pack_new_dump(options, log=None):
 
 def make_folders(options, tdump=None, tlast=None):
     try:
-        os.makedirs(options.path.root)
+        os.makedirs(options.path.dir)
     except OSError:
-        if not os.path.isdir(options.path.root):
+        if not os.path.isdir(options.path.dir):
             raise
 
     if tdump is None:
@@ -520,6 +520,7 @@ def lexit(msg, log=None):
 
 def do_backup(options):
     make_folders(options)
+    print vars(options.path)
     with open(options.path.log, "w") as log:
         get_last_dumps(options, log)
         sql = dump_db_schema(options, log)
