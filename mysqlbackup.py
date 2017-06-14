@@ -17,7 +17,7 @@
 
 """
 
-__version__ = "1.32"
+__version__ = "1.33"
 __copyright__ = "Vladimir Kushnir aka Kvantum i(c)2016"
 
 __all__ = ['BackupOptions',
@@ -473,17 +473,24 @@ def pack_new_dump(options, log=None):
         if pkzip.returncode > 0:
             lexit("ZIP files error!")
 
-def make_folders(options, tdump=None, tlast=None):
+def make_folders(options, tdump=None, tlast=None, log=None):
     try:
         os.makedirs(options.path.dir)
     except OSError:
         if not os.path.isdir(options.path.dir):
             raise
 
+    mysql = Popen(["mysql", "--login-path="+options.database_auth, "-NBe",
+                   "SHOW VARIABLES LIKE 'secure_file_priv';"], stdout=PIPE, stderr=log)
+    cmysql = mysql.communicate()
+    if mysql.returncode > 0:
+        lexit("Error when extracting 'secure_file_priv' path!")
+    sfv=cmysql[0].split()[1]
+
     if tdump is None:
-        tdump = tempfile.mkdtemp()
+        tdump = tempfile.mkdtemp(dir=sfv)
     if tlast is None:
-        tlast = tempfile.mkdtemp()
+        tlast = tempfile.mkdtemp(dir=sfv)
 
     #if hasattr(options.path, 'temp_dump'):
     #    options.path.temp_dump = tdump
@@ -519,14 +526,13 @@ def lexit(msg, log=None):
 
 
 def do_backup(options):
-    make_folders(options)
-    print vars(options.path)
     with open(options.path.log, "w") as log:
-        get_last_dumps(options, log)
-        sql = dump_db_schema(options, log)
+        make_folders(options, log=log)
+        get_last_dumps(options, log=log)
+        sql = dump_db_schema(options, log=log)
         get_diff(options, sql, os.path.join(options.path.temp_last, options.database_name+".sql"))
-        dump_db_tables(options, log)
-        pack_new_dump(options)
+        dump_db_tables(options, log=log)
+        pack_new_dump(options, log=log)
     clean_folders(options)
 
 
