@@ -334,25 +334,26 @@ def get_last_dumps(options, log=None):
 def get_diff(options, new, old, log=None, new2=None):
     if os.path.exists(old):
         new_diff = os.path.splitext(new)[0]+'.diff'
-    with open(new_diff, "w") as fnd:
-        diff = Popen(["diff", "--ignore-case", "--ignore-tab-expansion", 
-                     "--ignore-blank-lines", "--ignore-space-change", 
-                     "--ignore-matching-lines=^--", "-u", new, old], 
-                     stdout = fnd, stderr = log)
-        cdiff = diff.communicate()
-        if diff.returncode == 0:
-            os.remove(new_diff)
-            if options.save_changed:
-                os.remove(new)
-                if new2 is not None:
-                    os.remove(new2)
-                return False
-        elif diff.returncode == 1:
-            if not options.save_diff:
+        with open(new_diff, "w") as fnd:
+            diff = Popen(["diff", "--ignore-case", "--ignore-tab-expansion",
+                         "--ignore-blank-lines", "--ignore-space-change",
+                         "--ignore-matching-lines=^--", "-u", new, old],
+                         stdout = fnd, stderr = log)
+            cdiff = diff.communicate()
+            if diff.returncode == 0:
                 os.remove(new_diff)
-            return True
-        else:
-            lexit('Generate diff file "'+new_diff+'" error!')
+                if options.save_changed:
+                    os.remove(new)
+                    if new2 is not None:
+                        os.remove(new2)
+                    return False
+            elif diff.returncode == 1:
+                if not options.save_diff:
+                    os.remove(new_diff)
+                return True
+            else:
+                lexit('Generate diff file "'+new_diff+'" error!')
+    return True
 
 
 def get_db_tables(options, log):
