@@ -17,7 +17,7 @@
 
 """
 
-__version__ = "1.33"
+__version__ = "1.331"
 __copyright__ = "Vladimir Kushnir aka Kvantum i(c)2016"
 
 __all__ = ['BackupOptions',
@@ -42,7 +42,6 @@ __all__ = ['BackupOptions',
            'clean_folders',
            'do_backup',
            'get_options']
-
 
 # Import required python libraries
 import os
@@ -79,22 +78,25 @@ class BackupOptions(object):
     @property
     def backup_root(self):
         return self._backup_root
+
     @backup_root.setter
     def backup_root(self, value):
         self._backup_root = value
         self.path._set()
-        
+
     @property
     def backup_date(self):
         return self._backup_date
+
     @backup_date.setter
     def backup_date(self, value):
         self._backup_date = value
         self.path._set()
-        
+
     @property
     def database_name(self):
         return self._database_name
+
     @database_name.setter
     def database_name(self, value):
         self._database_name = value
@@ -103,6 +105,7 @@ class BackupOptions(object):
     @property
     def database_auth(self):
         return self._database_auth
+
     @database_auth.setter
     def database_auth(self, value):
         self._database_auth = value
@@ -110,13 +113,15 @@ class BackupOptions(object):
     @property
     def save_diff(self):
         return self._save_diff
+
     @save_diff.setter
     def save_diff(self, value):
         self._save_diff = value
-    
+
     @property
     def save_data(self):
         return self._save_data
+
     @save_data.setter
     def save_data(self, value):
         self._save_data = value
@@ -124,6 +129,7 @@ class BackupOptions(object):
     @property
     def save_changed(self):
         return self._save_changed
+
     @save_changed.setter
     def save_changed(self, value):
         self._save_changed = value
@@ -131,8 +137,10 @@ class BackupOptions(object):
 
 class BackupNames:
     include = None
+
     def __init__(self, names=[]):
         self.names = names
+
 
 class BackupFolders(object):
     def __init__(self, get_value_func):
@@ -152,8 +160,8 @@ class BackupFolders(object):
         name = os.path.join(self._dir, '{3}_{0}{1:02d}{2:02d}'.format(dt.year, dt.month, dt.day, db)).replace(' ', '_')
         self._backup = name + '.zip'
         self._log = name + '.log'
-    
-    @property 
+
+    @property
     def root(self):
         return self._root
 
@@ -172,10 +180,10 @@ class BackupFolders(object):
     @property
     def log(self):
         return self._log
-    
+
 
 # EXCEPTIONS
-class ConfigError (Exception):
+class ConfigError(Exception):
     def __init__(self, msg):
         self.msg = msg
 
@@ -185,13 +193,15 @@ class ConfigError (Exception):
 
 # FUNCTIONS
 def sqlf_to_str(list):
-    return "`"+"`,`".join(list)+"`"
+    return "`" + "`,`".join(list) + "`"
+
 
 def sqls_to_str(list):
-    return "'"+"','".join(list)+"'"
+    return "'" + "','".join(list) + "'"
+
 
 def str_to_bool(value):
-    if str(value).lower() in ("yes", "y", "true",  "t", "1"): 
+    if str(value).lower() in ("yes", "y", "true", "t", "1"):
         return True
     return False
 
@@ -199,8 +209,8 @@ def str_to_bool(value):
 def find_config_file(name=None, locations=['/etc', os.path.dirname(sys.argv[0])], read=True):
     # search cofiguration file
     if name is None:
-        #name = os.path.splitext(os.path.basename(__file__))[0]+'.conf'
-        name = os.path.splitext(os.path.basename(sys.argv[0]))[0]+'.conf'
+        # name = os.path.splitext(os.path.basename(__file__))[0]+'.conf'
+        name = os.path.splitext(os.path.basename(sys.argv[0]))[0] + '.conf'
     if os.path.exists(name):
         return name
     else:
@@ -221,13 +231,13 @@ def load_config_file(options, name=None):
 
     cfg = ConfigParser.RawConfigParser()
     if not cfg.read(name):
-        raise ConfigError("Read configureation from file '"+name+"' error!")
+        raise ConfigError("Read configureation from file '" + name + "' error!")
 
     if cfg.has_option('database', 'database'):
         options.database_name = cfg.get('database', 'database')
 
     if cfg.has_option('database', 'login-path'):
-        options.database_auth = cfg.get('database', 'login-path')      
+        options.database_auth = cfg.get('database', 'login-path')
 
     if cfg.has_option('database', 'backup-root'):
         options.backup_root = cfg.get('database', 'backup-root')
@@ -252,16 +262,16 @@ def load_config_file(options, name=None):
     if cfg.has_section('columns'):
         options.columns = {}
         for table in cfg.options('columns'):
-            print "table: "+table
+            print "table: " + table
             options.columns[table] = BackupNames(cfg.get('columns', table).split(','))
             options.columns[table].include = str_to_bool(options.columns[table].names.pop(0))
     return True
 
 
 def load_command_arguments(options, arguments=None):
-    prs = OptionParser(version="%prog "+__version__)
+    prs = OptionParser(version="%prog " + __version__)
     prs.add_option('-c', '--configuration', dest='conf', help=
-                   "Load configuration from file")
+    "Load configuration from file")
 
     grp = OptionGroup(prs, "Override CFG", "Next options override data loaded from config file")
     grp.add_option("-r", "--backup-root", dest="root",
@@ -285,9 +295,9 @@ def load_command_arguments(options, arguments=None):
     prs.add_option_group(grp)
 
     (opt, oargs) = prs.parse_args(arguments)
-    
+
     if opt.conf is not None:
-        print "search "+ opt.conf
+        print "search " + opt.conf
         load_config_file(options, opt.conf)
 
     if opt.db_name is not None:
@@ -325,7 +335,7 @@ def get_last_dumps(options, log=None):
                 unzip = Popen(["unzip", "-uo", pzip, "-d", options.path.temp_last], stderr=log)
                 cunzip = unzip.communicate()
                 if unzip.returncode > 0:
-                    lexit("Extract files from '"+pzip+"' error!")
+                    lexit("Extract files from '" + pzip + "' error!")
             return True
     else:
         return False
@@ -333,12 +343,12 @@ def get_last_dumps(options, log=None):
 
 def get_diff(options, new, old, log=None, new2=None):
     if os.path.exists(old):
-        new_diff = os.path.splitext(new)[0]+'.diff'
+        new_diff = os.path.splitext(new)[0] + '.diff'
         with open(new_diff, "w") as fnd:
             diff = Popen(["diff", "--ignore-case", "--ignore-tab-expansion",
-                         "--ignore-blank-lines", "--ignore-space-change",
-                         "--ignore-matching-lines=^--", "-u", new, old],
-                         stdout = fnd, stderr = log)
+                          "--ignore-blank-lines", "--ignore-space-change",
+                          "--ignore-matching-lines=^--", "-u", new, old],
+                         stdout=fnd, stderr=log)
             cdiff = diff.communicate()
             if diff.returncode == 0:
                 os.remove(new_diff)
@@ -352,14 +362,14 @@ def get_diff(options, new, old, log=None, new2=None):
                     os.remove(new_diff)
                 return True
             else:
-                lexit('Generate diff file "'+new_diff+'" error!')
+                lexit('Generate diff file "' + new_diff + '" error!')
     return True
 
 
 def get_db_tables(options, log):
-    mysql = Popen(["mysql", "--login-path="+options.database_auth, "information_schema", "-e",
-                  "SELECT `t`.`TABLE_NAME` FROM `information_schema`.`TABLES` `t`"
-                  " WHERE `t`.`TABLE_SCHEMA`='"+options.database_name+"' AND `t`.`TABLE_TYPE`='BASE TABLE';"],
+    mysql = Popen(["mysql", "--login-path=" + options.database_auth, "information_schema", "-e",
+                   "SELECT `t`.`TABLE_NAME` FROM `information_schema`.`TABLES` `t`"
+                   " WHERE `t`.`TABLE_SCHEMA`='" + options.database_name + "' AND `t`.`TABLE_TYPE`='BASE TABLE';"],
                   stdout=PIPE, stderr=log)
     cmysql = mysql.communicate()
     if cmysql[0] == '' or mysql.returncode > 0:
@@ -383,13 +393,13 @@ def get_db_tables(options, log):
 
 
 def get_db_table_columns(options, table, log=None):
-    mysql = Popen(["mysql", "--login-path="+options.database_auth, "information_schema", "-e",
-                  "SELECT `c`.`COLUMN_NAME` FROM `information_schema`.`COLUMNS` c"
-                  " WHERE c.TABLE_SCHEMA='"+options.database_name+"' AND c.TABLE_NAME='"+table+"';"],
+    mysql = Popen(["mysql", "--login-path=" + options.database_auth, "information_schema", "-e",
+                   "SELECT `c`.`COLUMN_NAME` FROM `information_schema`.`COLUMNS` c"
+                   " WHERE c.TABLE_SCHEMA='" + options.database_name + "' AND c.TABLE_NAME='" + table + "';"],
                   stdout=PIPE, stderr=log)
     cmysql = mysql.communicate()
     if mysql.returncode > 0:
-        lexit("Get table '"+table+"' columns error!")
+        lexit("Get table '" + table + "' columns error!")
     all_columns = cmysql[0].split()
     all_columns.pop(0)
 
@@ -405,15 +415,15 @@ def get_db_table_columns(options, table, log=None):
 
 
 def dump_db_schema(options, log=None):
-    sql_dump = os.path.join(options.path.temp_dump, options.database_name+".sql")
+    sql_dump = os.path.join(options.path.temp_dump, options.database_name + ".sql")
     with open(sql_dump, "w") as fsd:
-        mysqld = Popen(["mysqldump", "--login-path="+options.database_auth, "--routines",
-                       "--complete-insert", "--extended-insert", "--order-by-primary", 
-                       "--quote-names", "--skip-add-drop-table","--no-data", 
-                       options.database_name], stdout = fsd, stderr = log)
+        mysqld = Popen(["mysqldump", "--login-path=" + options.database_auth, "--routines",
+                        "--complete-insert", "--extended-insert", "--order-by-primary",
+                        "--quote-names", "--skip-add-drop-table", "--no-data",
+                        options.database_name], stdout=fsd, stderr=log)
         cmysqld = mysqld.communicate()
         if mysqld.returncode > 0:
-            lexit("Save '"+options.database_name+"' schema error!")
+            lexit("Save '" + options.database_name + "' schema error!")
     return sql_dump
 
 
@@ -424,55 +434,58 @@ def dump_db_tables(options, log=None):
             columns = get_db_table_columns(options, table, log)
             table_hdr = dump_db_table_hdr(options, table, log)
             table_csv = dump_db_table_csv(options, table, log)
-            get_diff(options, table_csv, os.path.join(options.path.temp_last, table+'.csv'), log, table_hdr)
+            get_diff(options, table_csv, os.path.join(options.path.temp_last, table + '.csv'), log, table_hdr)
 
 
 def dump_db_table_hdr(options, table, log=None):
-    table_hdr = os.path.join(options.path.temp_dump, table+".hdr")
+    table_hdr = os.path.join(options.path.temp_dump, table + ".hdr")
     if os.path.exists(table_hdr):
         os.remove(table_hdr)
-    mysql = Popen(["mysql", "--login-path="+options.database_auth, options.database_name, "-e",
-                  "SELECT "+sqls_to_str(options.dump_columns[table].names)+" INTO OUTFILE '"+table_hdr+"'"
-                  " FIELDS TERMINATED BY ','"
-                  " OPTIONALLY ENCLOSED BY '\"'"
-                  " LINES TERMINATED BY '\\n';"], stderr=log)
+    mysql = Popen(["mysql", "--login-path=" + options.database_auth, options.database_name, "-e",
+                   "SELECT " + sqls_to_str(options.dump_columns[table].names) + " INTO OUTFILE '" + table_hdr + "'"
+                   " FIELDS TERMINATED BY ','"
+                   " OPTIONALLY ENCLOSED BY '\"'"
+                   " LINES TERMINATED BY '\\n';"],
+                  stderr=log)
     cmysql = mysql.communicate()
     if mysql.returncode > 0:
-        lexit("Save table '"+table+"' headers error!")
+        lexit("Save table '" + table + "' headers error!")
     return table_hdr
 
 
 def dump_db_table_csv(options, table, log=None):
-    table_csv = os.path.join(options.path.temp_dump, table+".csv")
+    table_csv = os.path.join(options.path.temp_dump, table + ".csv")
     if os.path.exists(table_csv):
         os.remove(table_csv)
-    mysql = Popen(["mysql", "--login-path="+options.database_auth, options.database_name, "-e",
-                  "SELECT "+sqlf_to_str(options.dump_columns[table].names)+" FROM `"+table+"` INTO OUTFILE '"+table_csv+"'"
-                  " FIELDS TERMINATED BY ','"
-                  " OPTIONALLY ENCLOSED BY '\"'"
-                  " LINES TERMINATED BY '\\n';"], stderr=log)
+    mysql = Popen(["mysql", "--login-path=" + options.database_auth, options.database_name, "-e",
+                   "SELECT " + sqlf_to_str(options.dump_columns[table].names) + " FROM `" + table + "` INTO OUTFILE '" + table_csv + "'"
+                   " FIELDS TERMINATED BY ','"
+                   " OPTIONALLY ENCLOSED BY '\"'"
+                   " LINES TERMINATED BY '\\n';"],
+                  stderr=log)
     cmysql = mysql.communicate()
     if mysql.returncode > 0:
-        lexit("Get table '"+table+"' data error!")
+        lexit("Get table '" + table + "' data error!")
     return table_csv
 
 
 def db_table_has_data(options, table, log=None):
-    mysql = Popen(["mysql", "--login-path="+options.database_auth, options.database_name, "-e",
-                  "SELECT * FROM `"+table+"` LIMIT 1;"], stdout=PIPE, stderr=log)
+    mysql = Popen(["mysql", "--login-path=" + options.database_auth, options.database_name, "-e",
+                   "SELECT * FROM `" + table + "` LIMIT 1;"], stdout=PIPE, stderr=log)
     cmysql = mysql.communicate()
     if mysql.returncode > 0:
-        lexit("Check table '"+table+"' error!")
+        lexit("Check table '" + table + "' error!")
     return cmysql[0] != ''
 
 
 def pack_new_dump(options, log=None):
     if len(os.listdir(options.path.temp_dump)) > 0:
-        pkzip = Popen(["zip", "-9", "--junk-paths", "--latest-time", "--recurse-paths", 
+        pkzip = Popen(["zip", "-9", "--junk-paths", "--latest-time", "--recurse-paths",
                        options.path.backup, options.path.temp_dump], stderr=log)
         cpkzip = pkzip.communicate()
         if pkzip.returncode > 0:
             lexit("ZIP files error!")
+
 
 def make_folders(options, tdump=None, tlast=None, log=None):
     try:
@@ -481,30 +494,31 @@ def make_folders(options, tdump=None, tlast=None, log=None):
         if not os.path.isdir(options.path.dir):
             raise
 
-    mysql = Popen(["mysql", "--login-path="+options.database_auth, "-NBe",
+    mysql = Popen(["mysql", "--login-path=" + options.database_auth, "-NBe",
                    "SHOW VARIABLES LIKE 'secure_file_priv';"], stdout=PIPE, stderr=log)
     cmysql = mysql.communicate()
     if mysql.returncode > 0:
         lexit("Error when extracting 'secure_file_priv' path!")
-    sfv=cmysql[0].split()[1]
+    sfv = cmysql[0].split()[1]
 
     if tdump is None:
         tdump = tempfile.mkdtemp(dir=sfv)
     if tlast is None:
         tlast = tempfile.mkdtemp(dir=sfv)
 
-    #if hasattr(options.path, 'temp_dump'):
+    # if hasattr(options.path, 'temp_dump'):
     #    options.path.temp_dump = tdump
-    #else:
+    # else:
     setattr(options.path, 'temp_dump', tdump)
 
-    #if hasattr(options.path, 'temp_last'):
+    # if hasattr(options.path, 'temp_last'):
     #    options.path.temp_last = tlast
-    #else:
+    # else:
     setattr(options.path, 'temp_last', tlast)
 
     os.chmod(tdump, 0o777)
-    os.chmod(tlast, 0o777)  
+    os.chmod(tlast, 0o777)
+
 
 def clean_folders(options):
     cmd = ["rm", "-rf", options.path.temp_dump, options.path.temp_last]
@@ -522,16 +536,21 @@ def clean_folders(options):
 
 def lexit(msg, log=None):
     if log is not None:
-        log.write(msg+"\n")
-    sys.exit(msg+"\n")
+        log.write(msg + "\n")
+    sys.exit(msg + "\n")
 
 
 def do_backup(options):
+    if not os.path.exists(os.path.dirname(options.path.log)):
+        try:
+            os.makedirs(os.path.dirname(options.path.log))
+        except OSError:
+            raise
     with open(options.path.log, "w") as log:
         make_folders(options, log=log)
         get_last_dumps(options, log=log)
         sql = dump_db_schema(options, log=log)
-        get_diff(options, sql, os.path.join(options.path.temp_last, options.database_name+".sql"))
+        get_diff(options, sql, os.path.join(options.path.temp_last, options.database_name + ".sql"))
         dump_db_tables(options, log=log)
         pack_new_dump(options, log=log)
     clean_folders(options)
