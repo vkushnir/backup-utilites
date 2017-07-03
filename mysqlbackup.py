@@ -347,7 +347,7 @@ def get_diff(options, new, old, log=None, new2=None):
         with open(new_diff, "w") as fnd:
             diff = Popen(["diff", "--ignore-case", "--ignore-tab-expansion",
                           "--ignore-blank-lines", "--ignore-space-change",
-                          "--ignore-matching-lines=^--", "-u", new, old],
+                          "--ignore-matching-lines=^--", "-u", old, new],
                          stdout=fnd, stderr=log)
             cdiff = diff.communicate()
             if diff.returncode == 0:
