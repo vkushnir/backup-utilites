@@ -123,9 +123,9 @@ _Configuration file must have same name as main script with extention **'.conf'*
 
 ### Command-Line Arguments
 
- - -z <0|1> Full backup 1 - yearly, 0 - monthly
- - -v <Logical Volume Name>
- - -g <Volume Group>
- - -m <Mount Path>
- - -b <Backup Path>
- - -s <Snapshot Size>
+ - -z - *<0|1> full backup 1 - yearly, 0 - monthly*
+ - -v - *logical volume name to backup*
+ - -g - *volume vroup name where logical volume located*
+ - -m - *path to mount snaphot volume*
+ - -b - *path to store backup archives*
+ - -s - *size of snapshot*
