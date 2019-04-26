@@ -1,4 +1,4 @@
-### MYSQLBACKUP
+# MYSQLBACKUP
 *Simple backup utility for small MySQL databases.*
 
 ## Use:
@@ -114,3 +114,18 @@ _Configuration file must have same name as main script with extention **'.conf'*
  - do_backup
  - get_options
 
+# LVM Snapshot Backup
+*Create COW snapshot of LVM volume and do backup from that without interrupting work. Use **--listed-incremental** option with **tar** to store imake archives*
+
+## Use:
+
+    snap-backup.sh <options>
+
+### Command-Line Arguments
+
+ - -z <0|1> Full backup 1 - yearly, 0 - monthly
+ - -v <Logical Volume Name>
+ - -g <Volume Group>
+ - -m <Mount Path>
+ - -b <Backup Path>
+ - -s <Snapshot Size>
