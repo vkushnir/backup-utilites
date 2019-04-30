@@ -155,9 +155,9 @@ class BackupFolders(object):
         db = self._get('database_name')
 
         self._root = os.path.join('/', rt, db).replace(' ', '_')
-        self._find = os.path.join(self._root, '{0}'.format(dt.year))
-        self._dir = os.path.join(self._root, '{0}/{0}-{1:02d}'.format(dt.year, dt.month))
-        name = os.path.join(self._dir, '{3}_{0}{1:02d}{2:02d}'.format(dt.year, dt.month, dt.day, db)).replace(' ', '_')
+        self._find = os.path.join(self._root, '{:%Y}'.format(dt))
+        self._dir = os.path.join(self._root, '{:%Y/%Y-%m}'.format(dt))
+        name = os.path.join(self._dir, '{1}_{0:%Y%m%d}'.format(dt, db)).replace(' ', '_')
         self._backup = name + '.zip'
         self._log = name + '.log'
 
