@@ -5,7 +5,7 @@
 
  Written by : Vladimir Kushnir
  Created date: 25.05.2016
- Last modified: 06.06.2016
+ Last modified: 30.04.2019
  Tested with : Python 2.6.6
 
     Simple usage example:
@@ -17,7 +17,7 @@
 
 """
 
-__version__ = "1.331"
+__version__ = "1.332"
 __copyright__ = "Vladimir Kushnir aka Kvantum i(c)2016"
 
 __all__ = ['BackupOptions',
@@ -49,9 +49,9 @@ import sys
 import stat
 import tempfile
 import datetime
+import argparse
 import ConfigParser
 from subprocess import Popen, PIPE, STDOUT
-from optparse import OptionParser, OptionGroup
 
 
 class BackupOptions(object):
@@ -269,32 +269,36 @@ def load_config_file(options, name=None):
 
 
 def load_command_arguments(options, arguments=None):
-    prs = OptionParser(version="%prog " + __version__)
-    prs.add_option('-c', '--configuration', dest='conf', help=
-    "Load configuration from file")
+    prs = argparse.ArgumentParser(usage='%(prog)s [options]',
+                        description='Mysql database backup using mysqldump utility and INTO OUTFILE MySQL function')
+    prs.add_argument('--version', action='version', version='%(prog)s ' + __version__)
+    prs.set_defaults(zmode=('--verbose', 'tar'))
 
-    grp = OptionGroup(prs, "Override CFG", "Next options override data loaded from config file")
-    grp.add_option("-r", "--backup-root", dest="root",
-                   help="Backup root folder")
-    grp.add_option("-l", "--login-path", dest="db_path",
-                   help="'login-path' from '.mylogin.cnf' with data for mysql database backup access")
-    grp.add_option("-d", "--database", dest="db_name",
-                   help="MySQL database name")
-    grp.add_option("--save-data", dest="do_save", action="store_true",
-                   help="Save data from tables in 'csv' format")
-    grp.add_option("--no-data", dest="do_save", action="store_false",
-                   help="Don't save data from tables in 'csv' format")
-    grp.add_option("--save-diff", dest="do_diff", action="store_true",
-                   help="Generate diff file for each table if it changed from previous backup")
-    grp.add_option("--no-diff", dest="do_diff", action="store_false",
-                   help="Don't generate diff file for each table if it changed from previous backup")
-    grp.add_option("--save-changed", dest="do_inc", action="store_true",
-                   help="Save data only for tables that have changed with the previous backup")
-    grp.add_option("--save-all", dest="do_inc", action="store_false",
-                   help="Save data only from all tables")
-    prs.add_option_group(grp)
+    prs.add_argument('-c', '--configuration', dest='conf',
+                     help="Load configuration from file")
 
-    (opt, oargs) = prs.parse_args(arguments)
+    grp = prs.add_argument_group(title="Override CFG",
+                                 description="Next options override data loaded from config file")
+    grp.add_argument("-r", "--backup-root", dest="root",
+                     help="Backup root folder")
+    grp.add_argument("-l", "--login-path", dest="db_path",
+                     help="'login-path' from '.mylogin.cnf' with data for mysql database backup access")
+    grp.add_argument("-d", "--database", dest="db_name",
+                     help="MySQL database name")
+    grp.add_argument("--save-data", dest="do_save", action="store_true",
+                     help="Save data from tables in 'csv' format")
+    grp.add_argument("--no-data", dest="do_save", action="store_false",
+                     help="Don't save data from tables in 'csv' format")
+    grp.add_argument("--save-diff", dest="do_diff", action="store_true",
+                     help="Generate diff file for each table if it changed from previous backup")
+    grp.add_argument("--no-diff", dest="do_diff", action="store_false",
+                     help="Don't generate diff file for each table if it changed from previous backup")
+    grp.add_argument("--save-changed", dest="do_inc", action="store_true",
+                     help="Save data only for tables that have changed with the previous backup")
+    grp.add_argument("--save-all", dest="do_inc", action="store_false",
+                     help="Save data only from all tables")
+
+    opt = prs.parse_args(arguments)
 
     if opt.conf is not None:
         print "search " + opt.conf
