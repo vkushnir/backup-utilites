@@ -1,4 +1,4 @@
-# MYSQLBACKUP
+### MYSQLBACKUP
 *Simple backup utility for small MySQL databases.*
 
 ## Use:
@@ -114,6 +114,7 @@ _Configuration file must have same name as main script with extention **'.conf'*
  - do_backup
  - get_options
 
+<<<<<<< HEAD
 # LVM Snapshot Backup
 *Create COW snapshot of LVM volume and do backup from that without interrupting work. Use **--listed-incremental** option with **tar** to store imake archives*
 
@@ -129,3 +130,5 @@ _Configuration file must have same name as main script with extention **'.conf'*
  - -m - *path to mount snaphot volume*
  - -b - *path to store backup archives*
  - -s - *size of snapshot*
+=======
+>>>>>>> parent of d2990b5... add LVM backup
