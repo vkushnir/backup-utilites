@@ -12,7 +12,7 @@
 __version__ = "0.12"
 __copyright__ = "Vladimir Kushnir aka Kvantum (c)2019"
 
-__all__ = ['find_lv','find_mount_target','find_mount_source','LogicalVolume','LogicalVolumeCOW']
+__all__ = ['find_lv', 'find_mount_target', 'find_mount_source', 'LogicalVolume', 'LogicalVolumeCOW']
 
 import os
 import json
@@ -99,6 +99,7 @@ def lv_property(function):
     :param function:
     :return: wrapper
     """
+
     @property
     def wrapper(self, *args, **kwargs):
         if self._lv is None:
@@ -107,6 +108,7 @@ def lv_property(function):
             raise LogicalVolumeError('Can\'t get property from non existent volume!')
         else:
             return function(self, *args, **kwargs)
+
     return wrapper
 
 
@@ -115,6 +117,7 @@ class LogicalVolume(object):
     """
     Wrapper for Logical Volume
     """
+
     def __init__(self, name):
         """
         Create LogicalVolume LV Object
@@ -233,9 +236,9 @@ class LogicalVolume(object):
         :raises LogicalVolumeError: if LV mounted
         """
         if find_mount_target(self._lv['lv_dm_path']) is not None:
-            raise ('Can\'t remove mounted volume!')
+            raise LogicalVolumeError('Can\'t remove mounted volume!')
         check_call([CMD_LVREMOVE, '--force', self._lv['lv_full_name']])
-            #raise LogicalVolumeError('Removing snapshot "{}" failed!'.format(self._lv['lv_full_name']))
+        # raise LogicalVolumeError('Removing snapshot "{}" failed!'.format(self._lv['lv_full_name']))
 
     @property
     def mounted(self):
@@ -338,7 +341,7 @@ class LogicalVolumeCOW(LogicalVolume):
             raise LogicalVolumeError('Can\'t create snapshot from non existent origin!')
         super(LogicalVolumeCOW, self).__init__(name)
         if create:
-            self.create(size, mode)
+            self.create(mode, size)
 
     @property
     def origin(self):
@@ -367,4 +370,4 @@ class LogicalVolumeCOW(LogicalVolume):
         sopt = get_size_opt(size)
         check_call([CMD_LVCREATE, '--snapshot', '--name={}'.format(self._name), '--permission={}'.format(mode), sopt,
                     self._origin.full_name])
-            #raise LogicalVolumeError('Creating snapshot from "{}" failed!'.format(self._origin.full_name))
+        # raise LogicalVolumeError('Creating snapshot from "{}" failed!'.format(self._origin.full_name))
