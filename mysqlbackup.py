@@ -6,7 +6,7 @@
  Written by : Vladimir Kushnir
  Created date: 25.05.2016
  Last modified: 30.04.2019
- Tested with : Python 2.6.6
+ Tested with : Python 2.7
 
     Simple usage example:
 
@@ -17,7 +17,7 @@
 
 """
 
-__version__ = "1.332"
+__version__ = "1.4"
 __copyright__ = "Vladimir Kushnir aka Kvantum i(c)2016"
 
 __all__ = ['BackupOptions',
@@ -269,36 +269,36 @@ def load_config_file(options, name=None):
 
 
 def load_command_arguments(options, arguments=None):
-    prs = argparse.ArgumentParser(usage='%(prog)s [options]',
-                        description='Mysql database backup using mysqldump utility and INTO OUTFILE MySQL function')
-    prs.add_argument('--version', action='version', version='%(prog)s ' + __version__)
-    prs.set_defaults(zmode=('--verbose', 'tar'))
 
-    prs.add_argument('-c', '--configuration', dest='conf',
+    parser = argparse.ArgumentParser(usage='%(prog)s [options]',
+                          description='Mysql database backup using mysqldump utility and INTO OUTFILE MySQL function')
+    parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
+
+    parser.add_argument('-c', '--configuration', dest='conf',
                      help="Load configuration from file")
 
-    grp = prs.add_argument_group(title="Override CFG",
+    group = parser.add_argument_group(title="Override CFG",
                                  description="Next options override data loaded from config file")
-    grp.add_argument("-r", "--backup-root", dest="root",
+    group.add_argument("-r", "--backup-root", dest="root",
                      help="Backup root folder")
-    grp.add_argument("-l", "--login-path", dest="db_path",
+    group.add_argument("-l", "--login-path", dest="db_path",
                      help="'login-path' from '.mylogin.cnf' with data for mysql database backup access")
-    grp.add_argument("-d", "--database", dest="db_name",
+    group.add_argument("-d", "--database", dest="db_name",
                      help="MySQL database name")
-    grp.add_argument("--save-data", dest="do_save", action="store_true",
+    group.add_argument("--save-data", dest="do_save", action="store_true",
                      help="Save data from tables in 'csv' format")
-    grp.add_argument("--no-data", dest="do_save", action="store_false",
+    group.add_argument("--no-data", dest="do_save", action="store_false",
                      help="Don't save data from tables in 'csv' format")
-    grp.add_argument("--save-diff", dest="do_diff", action="store_true",
+    group.add_argument("--save-diff", dest="do_diff", action="store_true",
                      help="Generate diff file for each table if it changed from previous backup")
-    grp.add_argument("--no-diff", dest="do_diff", action="store_false",
+    group.add_argument("--no-diff", dest="do_diff", action="store_false",
                      help="Don't generate diff file for each table if it changed from previous backup")
-    grp.add_argument("--save-changed", dest="do_inc", action="store_true",
+    group.add_argument("--save-changed", dest="do_inc", action="store_true",
                      help="Save data only for tables that have changed with the previous backup")
-    grp.add_argument("--save-all", dest="do_inc", action="store_false",
+    group.add_argument("--save-all", dest="do_inc", action="store_false",
                      help="Save data only from all tables")
 
-    opt = prs.parse_args(arguments)
+    opt = parser.parse_args(arguments)
 
     if opt.conf is not None:
         print "search " + opt.conf
@@ -421,13 +421,36 @@ def get_db_table_columns(options, table, log=None):
 def dump_db_schema(options, log=None):
     sql_dump = os.path.join(options.path.temp_dump, options.database_name + ".sql")
     with open(sql_dump, "w") as fsd:
-        mysqld = Popen(["mysqldump", "--login-path=" + options.database_auth, "--routines",
-                        "--complete-insert", "--extended-insert", "--order-by-primary",
-                        "--quote-names", "--skip-add-drop-table", "--no-data",
+        mysqld = Popen(["mysqldump", "--login-path=" + options.database_auth, "--complete-insert", "--extended-insert",
+                        "--order-by-primary", "--quote-names", "--skip-add-drop-table", "--no-data",
                         options.database_name], stdout=fsd, stderr=log)
         cmysqld = mysqld.communicate()
         if mysqld.returncode > 0:
             lexit("Save '" + options.database_name + "' schema error!")
+    return sql_dump
+
+
+def dump_db_routines(options, log=None):
+    sql_dump = os.path.join(options.path.temp_dump, options.database_name + "_routines.sql")
+    with open(sql_dump, "w") as fsd:
+        mysqld = Popen(["mysqldump", "--login-path=" + options.database_auth, "--routines", "--events", "--triggers",
+                        "--no-create-info", "--no-data", "--no-create-db", "--skip-opt",
+                        options.database_name], stdout=fsd, stderr=log)
+        cmysqld = mysqld.communicate()
+        if mysqld.returncode > 0:
+            lexit("Save '" + options.database_name + "' routines error!")
+    return sql_dump
+
+
+def dump_db_data(options, log=None):
+    sql_dump = os.path.join(options.path.temp_dump, options.database_name + "_data.sql")
+    with open(sql_dump, "w") as fsd:
+        mysqld = Popen(["mysqldump", "--login-path=" + options.database_auth, "--no-create-info", "--complete-insert",
+                        "--extended-insert", "--order-by-primary", "--quote-names", "--skip-add-drop-table",
+                        options.database_name], stdout=fsd, stderr=log)
+        cmysqld = mysqld.communicate()
+        if mysqld.returncode > 0:
+            lexit("Save '" + options.database_name + "' routines error!")
     return sql_dump
 
 
@@ -462,10 +485,11 @@ def dump_db_table_csv(options, table, log=None):
     if os.path.exists(table_csv):
         os.remove(table_csv)
     mysql = Popen(["mysql", "--login-path=" + options.database_auth, options.database_name, "-e",
-                   "SELECT " + sqlf_to_str(options.dump_columns[table].names) + " FROM `" + table + "` INTO OUTFILE '" + table_csv + "'"
-                   " FIELDS TERMINATED BY ','"
-                   " OPTIONALLY ENCLOSED BY '\"'"
-                   " LINES TERMINATED BY '\\n';"],
+                   "SELECT " + sqlf_to_str(
+                       options.dump_columns[table].names) + " FROM `" + table + "` INTO OUTFILE '" + table_csv + "'"
+                    " FIELDS TERMINATED BY ','"
+                    " OPTIONALLY ENCLOSED BY '\"'"
+                    " LINES TERMINATED BY '\\n';"],
                   stderr=log)
     cmysql = mysql.communicate()
     if mysql.returncode > 0:
@@ -554,7 +578,11 @@ def do_backup(options):
         make_folders(options, log=log)
         get_last_dumps(options, log=log)
         sql = dump_db_schema(options, log=log)
+        sqlr = dump_db_routines(options, log=log)
+        sqld = dump_db_data(options, log=log)
         get_diff(options, sql, os.path.join(options.path.temp_last, options.database_name + ".sql"))
+        get_diff(options, sqlr, os.path.join(options.path.temp_last, options.database_name + "_routines.sql"))
+        # get_diff(options, sqld, os.path.join(options.path.temp_last, options.database_name + "_data.sql"))
         dump_db_tables(options, log=log)
         pack_new_dump(options, log=log)
     clean_folders(options)
@@ -568,4 +596,5 @@ def get_options():
 
 
 if __name__ == "__main__":
+    # TODO: Save tables  CSV/SUMP
     do_backup(get_options())
